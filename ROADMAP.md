@@ -1,5 +1,5 @@
 # Portfolio Linux Desktop – Build Roadmap
-
+ 
 ## 🔧 Phase 1 – Setup & Boilerplate
 - [ ] Initialize project with Vite + React + TailwindCSS
 - [ ] Add framer-motion and tailwind plugins for glass effect (backdrop-filter)
