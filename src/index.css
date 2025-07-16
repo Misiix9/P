@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-[#181a20] text-white;
+  min-height: 100vh;
+  font-family: 'Inter', 'JetBrains Mono', monospace, sans-serif;
+  overflow: hidden;
+}
