@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 
@@ -17,12 +17,14 @@ import Terminal from './components/Apps/Terminal/Terminal';
 import Security from './components/Apps/Security/Security';
 import Terms from './components/Apps/Terms/Terms';
 import Contact from './components/Apps/Contact/Contact';
+import Projects from './components/Apps/Projects/Projects';
 import Browser from './components/Apps/Browser/Browser';
 import Calculator from './components/Apps/Calculator/Calculator';
 import Notepad from './components/Apps/Notepad/Notepad';
 import Gallery from './components/Apps/Gallery/Gallery';
 import Music from './components/Apps/Music/Music';
 import Settings from './components/Apps/Settings/Settings';
+import BootSequence from './components/BootSequence/BootSequence';
 
 // Stores
 import {
@@ -70,6 +72,28 @@ function App() {
     closeStartMenu,
     updateTime
   } = useSystemStore();
+
+  // Boot sequence state
+  const [isBootingUp, setIsBootingUp] = useState(true);
+  const [showBootSequence, setShowBootSequence] = useState(false);
+
+  // Check if this is the first visit or forced boot
+  useEffect(() => {
+    const hasBooted = localStorage.getItem('portfolio-has-booted');
+    const shouldShowBoot = !hasBooted || new URLSearchParams(window.location.search).get('boot') === 'true';
+    
+    if (shouldShowBoot) {
+      setShowBootSequence(true);
+    } else {
+      setIsBootingUp(false);
+    }
+  }, []);
+
+  const handleBootComplete = () => {
+    localStorage.setItem('portfolio-has-booted', 'true');
+    setIsBootingUp(false);
+    setShowBootSequence(false);
+  };
 
   // Update system time every second
   useEffect(() => {
@@ -204,6 +228,7 @@ function App() {
       security: <Security />,
       terms: <Terms />,
       contact: <Contact showNotification={addNotification} />,
+      projects: <Projects />,
       browser: <Browser />,
       calculator: <Calculator />,
       notepad: <Notepad />,
@@ -223,12 +248,20 @@ function App() {
   const currentWallpaper = wallpapers[wallpaper] || wallpapers.gradient;
 
   return (
-    <div className={clsx(
-      "min-h-screen w-full relative overflow-hidden transition-all duration-500",
-      currentWallpaper
-    )}>
-      {/* Taskbar at the top */}
-      <Taskbar onStartMenuShortcut={handleStartMenuShortcut} />
+    <>
+      {/* Boot Sequence */}
+      {showBootSequence && (
+        <BootSequence onComplete={handleBootComplete} />
+      )}
+
+      {/* Main Desktop Interface */}
+      {!isBootingUp && (
+        <div className={clsx(
+          "min-h-screen w-full relative overflow-hidden transition-all duration-500",
+          currentWallpaper
+        )}>
+          {/* Taskbar at the top */}
+          <Taskbar onStartMenuShortcut={handleStartMenuShortcut} />
       
       {/* Desktop area */}
       <motion.div 
@@ -278,12 +311,13 @@ function App() {
         {windows.map((window) => (
           <Window
             key={window.id}
+            id={window.id}
             title={window.title}
             minimized={window.minimized}
             maximized={window.maximized}
-            z={window.zIndex}
             position={window.position}
             size={window.size}
+            z={window.zIndex}
             onMinimize={() => handleWindowMinimize(window.id)}
             onMaximize={() => handleWindowMaximize(window.id)}
             onClose={() => handleWindowClose(window.id)}
@@ -332,9 +366,9 @@ function App() {
         </AnimatePresence>
       </div>
 
-      {/* Boot sequence overlay (optional) */}
-      {/* This could be added later for the boot animation */}
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 

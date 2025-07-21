@@ -82,6 +82,205 @@ const useWindowStore = create(
       windows: state.windows.map(w =>
         w.id === windowId ? { ...w, size } : w
       )
+    })),
+
+    // Advanced window management
+    snapWindow: (windowId, snapPosition) => set((state) => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight - 64; // Account for taskbar
+      const taskbarHeight = 48;
+      
+      let position, size;
+      
+      switch (snapPosition) {
+        case 'left':
+          position = { x: 0, y: taskbarHeight };
+          size = { width: screenWidth / 2, height: screenHeight };
+          break;
+        case 'right':
+          position = { x: screenWidth / 2, y: taskbarHeight };
+          size = { width: screenWidth / 2, height: screenHeight };
+          break;
+        case 'top':
+          position = { x: 0, y: taskbarHeight };
+          size = { width: screenWidth, height: screenHeight / 2 };
+          break;
+        case 'bottom':
+          position = { x: 0, y: taskbarHeight + screenHeight / 2 };
+          size = { width: screenWidth, height: screenHeight / 2 };
+          break;
+        case 'top-left':
+          position = { x: 0, y: taskbarHeight };
+          size = { width: screenWidth / 2, height: screenHeight / 2 };
+          break;
+        case 'top-right':
+          position = { x: screenWidth / 2, y: taskbarHeight };
+          size = { width: screenWidth / 2, height: screenHeight / 2 };
+          break;
+        case 'bottom-left':
+          position = { x: 0, y: taskbarHeight + screenHeight / 2 };
+          size = { width: screenWidth / 2, height: screenHeight / 2 };
+          break;
+        case 'bottom-right':
+          position = { x: screenWidth / 2, y: taskbarHeight + screenHeight / 2 };
+          size = { width: screenWidth / 2, height: screenHeight / 2 };
+          break;
+        case 'center':
+          position = { x: screenWidth / 4, y: taskbarHeight + screenHeight / 4 };
+          size = { width: screenWidth / 2, height: screenHeight / 2 };
+          break;
+        case 'maximize':
+          position = { x: 0, y: taskbarHeight };
+          size = { width: screenWidth, height: screenHeight };
+          break;
+        default:
+          return state;
+      }
+      
+      return {
+        windows: state.windows.map(w =>
+          w.id === windowId 
+            ? { ...w, position, size, maximized: snapPosition === 'maximize', snapped: snapPosition !== 'maximize' ? snapPosition : false }
+            : w
+        )
+      };
+    }),
+
+    arrangeSplitScreen: (windowId1, windowId2, orientation = 'horizontal') => set((state) => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight - 64;
+      const taskbarHeight = 48;
+      
+      if (orientation === 'horizontal') {
+        // Side by side
+        const window1Data = {
+          position: { x: 0, y: taskbarHeight },
+          size: { width: screenWidth / 2, height: screenHeight },
+          snapped: 'left'
+        };
+        const window2Data = {
+          position: { x: screenWidth / 2, y: taskbarHeight },
+          size: { width: screenWidth / 2, height: screenHeight },
+          snapped: 'right'
+        };
+        
+        return {
+          windows: state.windows.map(w => {
+            if (w.id === windowId1) return { ...w, ...window1Data, maximized: false };
+            if (w.id === windowId2) return { ...w, ...window2Data, maximized: false };
+            return w;
+          }),
+          activeWindowId: windowId1
+        };
+      } else {
+        // Top and bottom
+        const window1Data = {
+          position: { x: 0, y: taskbarHeight },
+          size: { width: screenWidth, height: screenHeight / 2 },
+          snapped: 'top'
+        };
+        const window2Data = {
+          position: { x: 0, y: taskbarHeight + screenHeight / 2 },
+          size: { width: screenWidth, height: screenHeight / 2 },
+          snapped: 'bottom'
+        };
+        
+        return {
+          windows: state.windows.map(w => {
+            if (w.id === windowId1) return { ...w, ...window1Data, maximized: false };
+            if (w.id === windowId2) return { ...w, ...window2Data, maximized: false };
+            return w;
+          }),
+          activeWindowId: windowId1
+        };
+      }
+    }),
+
+    cascadeWindows: () => set((state) => {
+      const offset = 40;
+      return {
+        windows: state.windows.map((w, index) => ({
+          ...w,
+          position: { 
+            x: 100 + (index * offset), 
+            y: 100 + (index * offset) 
+          },
+          size: { width: 800, height: 600 },
+          maximized: false,
+          snapped: false
+        }))
+      };
+    }),
+
+    tileWindows: () => set((state) => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight - 64;
+      const taskbarHeight = 48;
+      const windowCount = state.windows.length;
+      
+      if (windowCount === 0) return state;
+      
+      const cols = Math.ceil(Math.sqrt(windowCount));
+      const rows = Math.ceil(windowCount / cols);
+      const windowWidth = screenWidth / cols;
+      const windowHeight = screenHeight / rows;
+      
+      return {
+        windows: state.windows.map((w, index) => {
+          const col = index % cols;
+          const row = Math.floor(index / cols);
+          
+          return {
+            ...w,
+            position: {
+              x: col * windowWidth,
+              y: taskbarHeight + (row * windowHeight)
+            },
+            size: {
+              width: windowWidth,
+              height: windowHeight
+            },
+            maximized: false,
+            snapped: false
+          };
+        })
+      };
+    }),
+
+    getSnapZone: (x, y) => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const snapThreshold = 50;
+      
+      // Edge snapping zones
+      if (x < snapThreshold) {
+        if (y < snapThreshold) return 'top-left';
+        if (y > screenHeight - snapThreshold) return 'bottom-left';
+        return 'left';
+      }
+      if (x > screenWidth - snapThreshold) {
+        if (y < snapThreshold) return 'top-right';
+        if (y > screenHeight - snapThreshold) return 'bottom-right';
+        return 'right';
+      }
+      if (y < snapThreshold) return 'top';
+      if (y > screenHeight - snapThreshold) return 'bottom';
+      
+      return null;
+    },
+
+    restoreWindow: (windowId) => set((state) => ({
+      windows: state.windows.map(w =>
+        w.id === windowId 
+          ? { 
+              ...w, 
+              maximized: false, 
+              snapped: false,
+              position: { x: 100, y: 100 },
+              size: { width: 800, height: 600 }
+            } 
+          : w
+      )
     }))
   }))
 );
