@@ -15,7 +15,7 @@ import {
   Settings,
   Copy,
   Move,
-  Resize,
+  Expand,
   PictureInPicture2
 } from 'lucide-react';
 import { playClick } from '../../utils/soundManager';

@@ -381,11 +381,14 @@ const useDesktopStore = create(
         { id: 'security', label: 'Security', type: 'security', icon: 'Shield' },
         { id: 'terms', label: 'Terms & Services', type: 'terms', icon: 'FileText' },
         { id: 'contact', label: 'Contact', type: 'contact', icon: 'Mail' },
+        { id: 'projects', label: 'Projects', type: 'projects', icon: 'Code2' },
         { id: 'browser', label: 'Browser', type: 'browser', icon: 'Globe' },
         { id: 'calculator', label: 'Calculator', type: 'calculator', icon: 'Calculator' },
         { id: 'notepad', label: 'Notepad', type: 'notepad', icon: 'Edit' },
         { id: 'gallery', label: 'Gallery', type: 'gallery', icon: 'Image' },
         { id: 'music', label: 'Music', type: 'music', icon: 'Music' },
+        { id: 'weather', label: 'Weather', type: 'weather', icon: 'Cloud' },
+        { id: 'stocks', label: 'Stocks', type: 'stocks', icon: 'TrendingUp' },
         { id: 'settings', label: 'Settings', type: 'settings', icon: 'Settings' }
       ],
 

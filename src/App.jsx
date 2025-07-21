@@ -23,6 +23,8 @@ import Calculator from './components/Apps/Calculator/Calculator';
 import Notepad from './components/Apps/Notepad/Notepad';
 import Gallery from './components/Apps/Gallery/Gallery';
 import Music from './components/Apps/Music/Music';
+import Weather from './components/Apps/Weather/Weather';
+import Stocks from './components/Apps/Stocks/Stocks';
 import Settings from './components/Apps/Settings/Settings';
 import BootSequence from './components/BootSequence/BootSequence';
 
@@ -84,8 +86,18 @@ function App() {
     
     if (shouldShowBoot) {
       setShowBootSequence(true);
+      setIsBootingUp(true);
+      
+      // Safety timeout - if boot sequence doesn't complete in 15 seconds, show main app
+      const safetyTimeout = setTimeout(() => {
+        console.warn('Boot sequence timeout - showing main app');
+        handleBootComplete();
+      }, 15000);
+      
+      return () => clearTimeout(safetyTimeout);
     } else {
       setIsBootingUp(false);
+      setShowBootSequence(false);
     }
   }, []);
 
@@ -94,6 +106,22 @@ function App() {
     setIsBootingUp(false);
     setShowBootSequence(false);
   };
+
+  // Allow users to skip boot sequence with Escape key
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'Escape' && showBootSequence) {
+        console.log('Boot sequence skipped by user');
+        handleBootComplete();
+      }
+    };
+
+    if (showBootSequence) {
+      window.addEventListener('keydown', handleKeyPress);
+    }
+
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showBootSequence]);
 
   // Update system time every second
   useEffect(() => {
@@ -234,6 +262,8 @@ function App() {
       notepad: <Notepad />,
       gallery: <Gallery />,
       music: <Music />,
+      weather: <Weather />,
+      stocks: <Stocks />,
       settings: <Settings />
     };
 

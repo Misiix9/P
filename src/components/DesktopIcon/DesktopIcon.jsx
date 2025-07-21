@@ -16,9 +16,12 @@ const iconMap = {
   Edit: LucideIcons.Edit,
   Image: LucideIcons.Image,
   Music: LucideIcons.Music,
+  Cloud: LucideIcons.Cloud,
+  TrendingUp: LucideIcons.TrendingUp,
   Settings: LucideIcons.Settings,
   FolderOpen: LucideIcons.FolderOpen,
   Code: LucideIcons.Code,
+  Code2: LucideIcons.Code2,
   Database: LucideIcons.Database
 };
 
@@ -30,11 +33,14 @@ const typeIconMap = {
   security: 'Shield',
   terms: 'FileText',
   contact: 'Mail',
+  projects: 'Code2',
   browser: 'Globe',
   calculator: 'Calculator',
   notepad: 'Edit',
   gallery: 'Image',
   music: 'Music',
+  weather: 'Cloud',
+  stocks: 'TrendingUp',
   settings: 'Settings',
   folder: 'FolderOpen',
   code: 'Code',
