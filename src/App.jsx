@@ -20,6 +20,9 @@ import Contact from './components/Apps/Contact/Contact';
 import Browser from './components/Apps/Browser/Browser';
 import Calculator from './components/Apps/Calculator/Calculator';
 import Notepad from './components/Apps/Notepad/Notepad';
+import Gallery from './components/Apps/Gallery/Gallery';
+import Music from './components/Apps/Music/Music';
+import Settings from './components/Apps/Settings/Settings';
 
 // Stores
 import {
@@ -204,9 +207,9 @@ function App() {
       browser: <Browser />,
       calculator: <Calculator />,
       notepad: <Notepad />,
-      gallery: <div className="text-white/80 text-center text-lg">Gallery - Coming Soon</div>,
-      music: <div className="text-white/80 text-center text-lg">Music Player - Coming Soon</div>,
-      settings: <div className="text-white/80 text-center text-lg">Settings - Coming Soon</div>
+      gallery: <Gallery />,
+      music: <Music />,
+      settings: <Settings />
     };
 
     return components[window.type] || (
