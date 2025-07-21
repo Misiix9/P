@@ -389,6 +389,9 @@ const useDesktopStore = create(
         { id: 'music', label: 'Music', type: 'music', icon: 'Music' },
         { id: 'weather', label: 'Weather', type: 'weather', icon: 'Cloud' },
         { id: 'stocks', label: 'Stocks', type: 'stocks', icon: 'TrendingUp' },
+        { id: 'news', label: 'News', type: 'news', icon: 'Newspaper' },
+        { id: 'calendar', label: 'Calendar', type: 'calendar', icon: 'Calendar' },
+        { id: 'apimonitor', label: 'API Monitor', type: 'apimonitor', icon: 'Activity' },
         { id: 'settings', label: 'Settings', type: 'settings', icon: 'Settings' }
       ],
 

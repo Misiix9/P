@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { playClick, playSuccess } from '../../../utils/soundManager';
 import { useNotificationStore } from '../../../stores/useStore';
+import { weatherService, geolocationService } from '../../../services/api';
 
 const Weather = () => {
   const [currentWeather, setCurrentWeather] = useState(null);
@@ -38,45 +39,6 @@ const Weather = () => {
   const [activeTab, setActiveTab] = useState('current'); // current, hourly, daily
 
   const addNotification = useNotificationStore((state) => state.addNotification);
-
-  // Simulated weather data (since we don't have a real API key)
-  const simulatedWeatherData = {
-    current: {
-      location: 'New York, NY',
-      temperature: 22,
-      feels_like: 24,
-      condition: 'partly_cloudy',
-      description: 'Partly Cloudy',
-      humidity: 65,
-      pressure: 1013,
-      visibility: 10,
-      uv_index: 6,
-      wind_speed: 12,
-      wind_direction: 'NW',
-      sunrise: '06:45',
-      sunset: '19:30',
-      updated: new Date()
-    },
-    hourly: [
-      { time: '12:00', temp: 22, condition: 'partly_cloudy', rain: 0 },
-      { time: '13:00', temp: 24, condition: 'sunny', rain: 0 },
-      { time: '14:00', temp: 26, condition: 'sunny', rain: 0 },
-      { time: '15:00', temp: 25, condition: 'cloudy', rain: 10 },
-      { time: '16:00', temp: 23, condition: 'rainy', rain: 60 },
-      { time: '17:00', temp: 21, condition: 'rainy', rain: 80 },
-      { time: '18:00', temp: 20, condition: 'cloudy', rain: 20 },
-      { time: '19:00', temp: 19, condition: 'partly_cloudy', rain: 0 }
-    ],
-    daily: [
-      { day: 'Today', high: 26, low: 18, condition: 'partly_cloudy', rain: 20 },
-      { day: 'Tomorrow', high: 28, low: 20, condition: 'sunny', rain: 0 },
-      { day: 'Wednesday', high: 24, low: 16, condition: 'rainy', rain: 80 },
-      { day: 'Thursday', high: 22, low: 14, condition: 'cloudy', rain: 30 },
-      { day: 'Friday', high: 25, low: 17, condition: 'partly_cloudy', rain: 10 },
-      { day: 'Saturday', high: 27, low: 19, condition: 'sunny', rain: 0 },
-      { day: 'Sunday', high: 23, low: 15, condition: 'thunderstorm', rain: 90 }
-    ]
-  };
 
   const weatherIcons = {
     sunny: Sun,
@@ -124,19 +86,14 @@ const Weather = () => {
     setError(null);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get current weather and forecast data from API
+      const [weatherData, forecastData] = await Promise.all([
+        weatherService.getCurrentWeather(location || currentLocation),
+        weatherService.getForecast(location || currentLocation)
+      ]);
       
-      // In a real app, you would make an API call here
-      // const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${API_KEY}&units=${units}`);
-      // const data = await response.json();
-      
-      // For demo purposes, use simulated data
-      setCurrentWeather({
-        ...simulatedWeatherData.current,
-        location: location || currentLocation
-      });
-      setForecast(simulatedWeatherData);
+      setCurrentWeather(weatherData);
+      setForecast(forecastData);
       
       addNotification({
         message: `Weather updated for ${location || currentLocation}`,
@@ -148,8 +105,22 @@ const Weather = () => {
         message: 'Failed to fetch weather data',
         type: 'error'
       });
+      console.error('Weather fetch error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Auto-detect user location on first load
+  const detectLocation = async () => {
+    try {
+      const location = await geolocationService.getCurrentLocation();
+      const locationName = location.city;
+      setCurrentLocation(locationName);
+      await fetchWeatherData(locationName);
+    } catch (error) {
+      console.warn('Geolocation failed, using default location:', error);
+      await fetchWeatherData();
     }
   };
 
@@ -173,7 +144,7 @@ const Weather = () => {
   };
 
   useEffect(() => {
-    fetchWeatherData();
+    detectLocation();
   }, []);
 
   const WeatherCard = ({ title, children, className = "" }) => (
@@ -376,16 +347,12 @@ const Weather = () => {
                   </div>
                 </WeatherCard>
 
-                <WeatherCard title="UV Index">
+                <WeatherCard title="Visibility">
                   <div className="flex items-center gap-3">
-                    <Sun className="w-8 h-8 text-yellow-400" />
+                    <Eye className="w-8 h-8 text-indigo-400" />
                     <div>
-                      <div className="text-2xl font-semibold text-white">{currentWeather.uv_index}</div>
-                      <div className="text-white/60 text-sm">
-                        {currentWeather.uv_index <= 2 ? 'Low' : 
-                         currentWeather.uv_index <= 5 ? 'Moderate' : 
-                         currentWeather.uv_index <= 7 ? 'High' : 'Very High'}
-                      </div>
+                      <div className="text-2xl font-semibold text-white">{currentWeather.visibility}</div>
+                      <div className="text-white/60 text-sm">km</div>
                     </div>
                   </div>
                 </WeatherCard>

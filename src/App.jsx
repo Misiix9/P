@@ -25,6 +25,9 @@ import Gallery from './components/Apps/Gallery/Gallery';
 import Music from './components/Apps/Music/Music';
 import Weather from './components/Apps/Weather/Weather';
 import Stocks from './components/Apps/Stocks/Stocks';
+import News from './components/Apps/News/News';
+import Calendar from './components/Apps/Calendar/Calendar';
+import APIMonitor from './components/Apps/APIMonitor/APIMonitor';
 import Settings from './components/Apps/Settings/Settings';
 import BootSequence from './components/BootSequence/BootSequence';
 
@@ -264,6 +267,9 @@ function App() {
       music: <Music />,
       weather: <Weather />,
       stocks: <Stocks />,
+      news: <News />,
+      calendar: <Calendar />,
+      apimonitor: <APIMonitor />,
       settings: <Settings />
     };
 

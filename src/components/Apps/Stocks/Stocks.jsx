@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { playClick, playSuccess } from '../../../utils/soundManager';
 import { useNotificationStore } from '../../../stores/useStore';
+import { stockService } from '../../../services/api';
 
 const Stocks = () => {
   const [stocks, setStocks] = useState([]);
@@ -46,124 +47,38 @@ const Stocks = () => {
 
   const addNotification = useNotificationStore((state) => state.addNotification);
 
-  // Simulated stock data
-  const stockData = [
-    {
-      symbol: 'AAPL',
-      name: 'Apple Inc.',
-      price: 175.43,
-      change: 2.15,
-      changePercent: 1.24,
-      volume: '45.2M',
-      marketCap: '2.8T',
-      pe: 28.5,
-      sector: 'Technology',
-      logo: '🍎'
-    },
-    {
-      symbol: 'GOOGL',
-      name: 'Alphabet Inc.',
-      price: 2847.92,
-      change: -15.68,
-      changePercent: -0.55,
-      volume: '1.2M',
-      marketCap: '1.9T',
-      pe: 25.2,
-      sector: 'Technology',
-      logo: '🔍'
-    },
-    {
-      symbol: 'TSLA',
-      name: 'Tesla, Inc.',
-      price: 248.50,
-      change: 8.25,
-      changePercent: 3.44,
-      volume: '28.4M',
-      marketCap: '789B',
-      pe: 62.1,
-      sector: 'Automotive',
-      logo: '⚡'
-    },
-    {
-      symbol: 'MSFT',
-      name: 'Microsoft Corporation',
-      price: 378.85,
-      change: 1.92,
-      changePercent: 0.51,
-      volume: '22.1M',
-      marketCap: '2.8T',
-      pe: 32.4,
-      sector: 'Technology',
-      logo: '⊞'
-    },
-    {
-      symbol: 'AMZN',
-      name: 'Amazon.com, Inc.',
-      price: 3247.15,
-      change: -18.45,
-      changePercent: -0.56,
-      volume: '3.8M',
-      marketCap: '1.6T',
-      pe: 54.8,
-      sector: 'E-commerce',
-      logo: '📦'
-    },
-    {
-      symbol: 'META',
-      name: 'Meta Platforms, Inc.',
-      price: 331.26,
-      change: 4.78,
-      changePercent: 1.47,
-      volume: '18.9M',
-      marketCap: '842B',
-      pe: 22.7,
-      sector: 'Social Media',
-      logo: '📘'
-    },
-    {
-      symbol: 'NVDA',
-      name: 'NVIDIA Corporation',
-      price: 875.42,
-      change: 12.68,
-      changePercent: 1.47,
-      volume: '41.2M',
-      marketCap: '2.2T',
-      pe: 71.3,
-      sector: 'Semiconductors',
-      logo: '🎮'
-    },
-    {
-      symbol: 'NFLX',
-      name: 'Netflix, Inc.',
-      price: 485.73,
-      change: -6.42,
-      changePercent: -1.30,
-      volume: '4.7M',
-      marketCap: '216B',
-      pe: 43.2,
-      sector: 'Entertainment',
-      logo: '🎬'
-    }
-  ];
+  // Default stock symbols to fetch
+  const defaultSymbols = ['AAPL', 'GOOGL', 'TSLA', 'MSFT', 'AMZN', 'META', 'NVDA', 'NFLX'];
 
-  // Simulate real-time updates
+  // Fetch stocks data
+  const fetchStocks = async () => {
+    try {
+      const stocksData = await stockService.getMultipleQuotes(defaultSymbols);
+      setStocks(stocksData);
+      
+      // Also fetch market overview
+      const overview = await stockService.getMarketOverview();
+      setMarketData(overview);
+    } catch (error) {
+      console.error('Failed to fetch stocks:', error);
+      addNotification({
+        message: 'Failed to fetch stock data',
+        type: 'error'
+      });
+    }
+  };
+
+  // Real-time updates every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setStocks(currentStocks => 
-        currentStocks.map(stock => ({
-          ...stock,
-          price: stock.price + (Math.random() - 0.5) * 2,
-          change: stock.change + (Math.random() - 0.5) * 0.5,
-          changePercent: stock.changePercent + (Math.random() - 0.5) * 0.1
-        }))
-      );
-    }, 3000);
+      fetchStocks();
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    setStocks(stockData);
+    fetchStocks();
   }, []);
 
   const filteredStocks = stocks.filter(stock =>
