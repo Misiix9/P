@@ -1,51 +1,124 @@
 import React from 'react';
-import { motion as Motion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import * as LucideIcons from 'lucide-react';
+import { playHover, playClick } from '../../utils/soundManager';
 
-// Example SVG icon (replace with custom icons as needed)
-const icons = {
-  computer: (
-    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/></svg>
-  ),
-  trash: (
-    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
-  ),
-  terminal: (
-    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-  ),
-  security: (
-    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-  ),
-  terms: (
-    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
-  ),
-  contact: (
-    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="12" cy="10" r="3"/></svg>
-  ),
+// Icon mapping
+const iconMap = {
+  Monitor: LucideIcons.Monitor,
+  Trash2: LucideIcons.Trash2,
+  Terminal: LucideIcons.Terminal,
+  Shield: LucideIcons.Shield,
+  FileText: LucideIcons.FileText,
+  Mail: LucideIcons.Mail,
+  Globe: LucideIcons.Globe,
+  Calculator: LucideIcons.Calculator,
+  Edit: LucideIcons.Edit,
+  Image: LucideIcons.Image,
+  Music: LucideIcons.Music,
+  Settings: LucideIcons.Settings,
+  FolderOpen: LucideIcons.FolderOpen,
+  Code: LucideIcons.Code,
+  Database: LucideIcons.Database
 };
 
-const DesktopIcon = ({ type, label, onDoubleClick, style, ...props }) => {
+// Legacy type to icon mapping for backward compatibility
+const typeIconMap = {
+  computer: 'Monitor',
+  trash: 'Trash2',
+  terminal: 'Terminal',
+  security: 'Shield',
+  terms: 'FileText',
+  contact: 'Mail',
+  browser: 'Globe',
+  calculator: 'Calculator',
+  notepad: 'Edit',
+  gallery: 'Image',
+  music: 'Music',
+  settings: 'Settings',
+  folder: 'FolderOpen',
+  code: 'Code',
+  database: 'Database'
+};
+
+const DesktopIcon = ({ 
+  type, 
+  label, 
+  onDoubleClick, 
+  style,
+  icon,
+  ...motionProps 
+}) => {
+  // Get the appropriate icon
+  const iconName = icon || typeIconMap[type] || 'Monitor';
+  const IconComponent = iconMap[iconName];
+
+  const handleMouseEnter = () => {
+    playHover();
+  };
+
+  const handleClick = () => {
+    playClick();
+  };
+
   return (
-    <Motion.div
-      drag
-      dragMomentum={false}
-      whileTap={{ scale: 0.97 }}
-      whileHover={{ scale: 1.08, boxShadow: '0 0 16px #00ffd0, 0 8px 32px 0 rgba(31,38,135,0.37)' }}
-      initial={{ opacity: 0, scale: 0.92 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 200, damping: 18 }}
-      className="flex flex-col items-center cursor-pointer select-none w-20 group"
+    <motion.div
+      className="flex flex-col items-center justify-center w-20 h-20 p-2 cursor-pointer select-none group"
       style={style}
-      tabIndex={0}
       onDoubleClick={onDoubleClick}
-      {...props}
+      onMouseEnter={handleMouseEnter}
+      onClick={handleClick}
+      whileHover={{ 
+        scale: 1.05,
+        transition: { type: "spring", stiffness: 400, damping: 25 }
+      }}
+      whileTap={{ 
+        scale: 0.95,
+        transition: { type: "spring", stiffness: 400, damping: 25 }
+      }}
+      {...motionProps}
     >
-      <div className="rounded-xl bg-glass backdrop-blur-md shadow-glass p-2 group-hover:bg-white/10 transition border border-white/10">
-        {icons[type]}
-      </div>
-      <span className="mt-2 text-xs text-white/80 text-center group-hover:text-accent transition drop-shadow">
+      {/* Icon Background */}
+      <motion.div
+        className="relative w-12 h-12 mb-1 flex items-center justify-center rounded-xl bg-glass-dark backdrop-blur-sm border border-white/10 shadow-glass group-hover:shadow-glow transition-all duration-300"
+        whileHover={{
+          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          borderColor: 'rgba(0, 255, 208, 0.3)',
+        }}
+      >
+        {/* Glow effect */}
+        <motion.div
+          className="absolute inset-0 rounded-xl bg-accent/20 blur-lg"
+          initial={{ opacity: 0 }}
+          whileHover={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        />
+        
+        {/* Icon */}
+        {IconComponent && (
+          <IconComponent 
+            className="w-6 h-6 text-white/90 group-hover:text-accent transition-colors duration-300 relative z-10" 
+          />
+        )}
+      </motion.div>
+
+      {/* Label */}
+      <motion.span
+        className="text-xs text-white/80 text-center font-medium drop-shadow-lg px-1 py-0.5 rounded bg-black/20 backdrop-blur-sm border border-white/5 max-w-16 truncate group-hover:text-white group-hover:bg-black/40 transition-all duration-300"
+        initial={{ opacity: 0.8 }}
+        whileHover={{ opacity: 1 }}
+      >
         {label}
-      </span>
-    </Motion.div>
+      </motion.span>
+
+      {/* Selection highlight */}
+      <motion.div
+        className="absolute inset-0 rounded-xl border-2 border-accent/60 bg-accent/10"
+        initial={{ opacity: 0 }}
+        whileFocus={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+      />
+    </motion.div>
   );
 };
 

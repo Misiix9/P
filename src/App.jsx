@@ -1,208 +1,336 @@
 import './App.css';
+import React, { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
+
+// Components
 import Taskbar from './components/Taskbar/Taskbar';
 import DesktopIcon from './components/DesktopIcon/DesktopIcon';
 import Window from './components/Window/Window';
-import React, { useReducer, useState, useCallback, useEffect } from 'react';
-import { windowReducer, initialWindows } from './utils/windowManager';
+import Notification from './components/Notification';
+import BottomTaskbar from './components/Taskbar/BottomTaskbar';
+
+// Apps
 import MyComputer from './components/Apps/MyComputer/MyComputer';
 import Trash from './components/Apps/Trash/Trash';
 import Terminal from './components/Apps/Terminal/Terminal';
 import Security from './components/Apps/Security/Security';
 import Terms from './components/Apps/Terms/Terms';
 import Contact from './components/Apps/Contact/Contact';
-import Notification from './components/Notification';
-import BottomTaskbar from './components/Taskbar/BottomTaskbar';
+import Browser from './components/Apps/Browser/Browser';
+import Calculator from './components/Apps/Calculator/Calculator';
+import Notepad from './components/Apps/Notepad/Notepad';
 
-const desktopIcons = [
-  { type: 'computer', label: 'My Computer', id: 'computer' },
-  { type: 'trash', label: 'Trash', id: 'trash' },
-  { type: 'terminal', label: 'Terminal', id: 'terminal' },
-  { type: 'security', label: 'Security', id: 'security' },
-  { type: 'terms', label: 'Terms & Services', id: 'terms' },
-  { type: 'contact', label: 'Contact', id: 'contact' },
-];
+// Stores
+import {
+  useWindowStore,
+  useThemeStore,
+  useDesktopStore,
+  useNotificationStore,
+  useSystemStore
+} from './stores/useStore';
 
-const windowTitles = {
-  computer: 'My Computer',
-  trash: 'Trash',
-  terminal: 'Terminal',
-  security: 'Security',
-  terms: 'Terms & Services',
-  contact: 'Contact',
-};
-
-const GRID_SIZE = 120;
-const GRID_GAP = 32;
-const GRID_COLS = 3;
+// Sound manager
+import { playOpen, playClose, playClick } from './utils/soundManager';
 
 function App() {
-  const [windows, dispatch] = useReducer(windowReducer, initialWindows);
-  const [notification, setNotification] = useState(null);
-  const [iconPositions, setIconPositions] = useState({});
-  const [activeId, setActiveId] = useState(null);
+  // Store hooks
+  const {
+    windows,
+    activeWindowId,
+    openWindow,
+    closeWindow,
+    minimizeWindow,
+    maximizeWindow,
+    focusWindow
+  } = useWindowStore();
 
-  // Load icon positions from localStorage
+  const {
+    currentTheme,
+    wallpaper,
+    getCurrentTheme,
+    wallpapers
+  } = useThemeStore();
+
+  const {
+    desktopIcons,
+    iconPositions,
+    updateIconPosition,
+    getGridPosition
+  } = useDesktopStore();
+
+  const { notifications, addNotification, removeNotification } = useNotificationStore();
+
+  const {
+    startMenuOpen,
+    toggleStartMenu,
+    closeStartMenu,
+    updateTime
+  } = useSystemStore();
+
+  // Update system time every second
   useEffect(() => {
-    const saved = localStorage.getItem('desktopIconPositions');
-    if (saved) setIconPositions(JSON.parse(saved));
-  }, []);
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, [updateTime]);
 
-  // Save icon positions to localStorage
+  // Apply theme CSS variables
   useEffect(() => {
-    localStorage.setItem('desktopIconPositions', JSON.stringify(iconPositions));
-  }, [iconPositions]);
+    const theme = getCurrentTheme();
+    const root = document.documentElement;
+    
+    root.style.setProperty('--accent-color', theme.accent);
+    root.style.setProperty('--taskbar-bg', theme.taskbar);
+    root.style.setProperty('--window-bg', theme.window);
+  }, [currentTheme, getCurrentTheme]);
 
-  // Notification helper
-  const showNotification = useCallback((message, type = 'info') => {
-    setNotification({ message, type });
-  }, []);
+  // Handle Start Menu shortcuts
+  const handleStartMenuShortcut = (appId) => {
+    playClick();
+    closeStartMenu();
 
-  // Handle Start Menu shortcut
-  const handleStartMenuShortcut = (id) => {
-    if (id === 'computer' || id === 'terminal' || id === 'contact') {
-      dispatch({
-        type: 'OPEN_WINDOW',
-        payload: {
-          id,
-          title: windowTitles[id] || id.charAt(0).toUpperCase() + id.slice(1),
-          type: id,
-        },
+    const appConfigs = {
+      computer: { title: 'My Computer', type: 'computer' },
+      trash: { title: 'Trash', type: 'trash' },
+      terminal: { title: 'Terminal', type: 'terminal' },
+      security: { title: 'Security', type: 'security' },
+      terms: { title: 'Terms & Services', type: 'terms' },
+      contact: { title: 'Contact', type: 'contact' },
+      browser: { title: 'Portfolio Browser', type: 'browser' },
+      calculator: { title: 'Calculator', type: 'calculator' },
+      notepad: { title: 'Notepad', type: 'notepad' },
+      gallery: { title: 'Gallery', type: 'gallery' },
+      music: { title: 'Music Player', type: 'music' },
+      settings: { title: 'Settings', type: 'settings' }
+    };
+
+    const config = appConfigs[appId];
+    if (config) {
+      openWindow({
+        id: appId,
+        title: config.title,
+        type: config.type
       });
-      showNotification(`${windowTitles[id] || id} opened`, 'info');
-    } else if (id === 'projects' || id === 'settings') {
-      showNotification('This feature is coming soon!', 'info');
+      
+      addNotification({
+        message: `${config.title} opened`,
+        type: 'success'
+      });
+    } else {
+      addNotification({
+        message: 'This feature is coming soon!',
+        type: 'info'
+      });
     }
   };
 
-  // Open window on icon double-click
+  // Handle desktop icon double click
   const handleIconDoubleClick = (icon) => {
-    dispatch({
-      type: 'OPEN_WINDOW',
-      payload: {
-        id: icon.id,
-        title: windowTitles[icon.id],
-        type: icon.type,
-      },
+    playOpen();
+    
+    openWindow({
+      id: icon.id,
+      title: icon.label,
+      type: icon.type
     });
-    showNotification(`${icon.label} opened`, 'info');
+
+    addNotification({
+      message: `${icon.label} opened`,
+      type: 'success'
+    });
   };
 
-  // Snap to grid logic
-  const getGridPosition = (i) => {
-    const col = i % GRID_COLS;
-    const row = Math.floor(i / GRID_COLS);
-    return {
-      x: col * (GRID_SIZE + GRID_GAP) + 40,
-      y: row * (GRID_SIZE + GRID_GAP) + 40,
-    };
-  };
-
-  const handleIconDragEnd = (id, event, info) => {
-    // Snap to grid cell under the mouse pointer
+  // Handle icon drag end with grid snapping
+  const handleIconDragEnd = (iconId, event, info) => {
     const pointerX = info.point.x;
     const pointerY = info.point.y;
-    // Subtract desktop offset (40px padding)
-    const x = pointerX - 40;
+    
+    // Snap to grid
+    const x = pointerX - 40; // Account for desktop padding
     const y = pointerY - 40;
-    const col = Math.max(0, Math.round(x / (GRID_SIZE + GRID_GAP)));
-    const row = Math.max(0, Math.round(y / (GRID_SIZE + GRID_GAP)));
-    setIconPositions(pos => ({
-      ...pos,
-      [id]: {
-        x: col * (GRID_SIZE + GRID_GAP) + 40,
-        y: row * (GRID_SIZE + GRID_GAP) + 40,
-      },
-    }));
+    const gridSize = 120;
+    const gridGap = 32;
+    
+    const col = Math.max(0, Math.round(x / (gridSize + gridGap)));
+    const row = Math.max(0, Math.round(y / (gridSize + gridGap)));
+    
+    const snappedPosition = {
+      x: col * (gridSize + gridGap) + 40,
+      y: row * (gridSize + gridGap) + 40
+    };
+
+    updateIconPosition(iconId, snappedPosition);
   };
 
-  // Minimize/restore logic for BottomTaskbar
-  const handleTaskbarClick = (win) => {
-    if (win.minimized) {
-      setActiveId(win.id);
-      dispatch({ type: 'MINIMIZE_WINDOW', payload: { id: win.id, minimized: false } });
-      dispatch({ type: 'FOCUS_WINDOW', payload: { id: win.id } });
+  // Handle window actions
+  const handleWindowMinimize = (windowId) => {
+    playClick();
+    minimizeWindow(windowId, true);
+  };
+
+  const handleWindowMaximize = (windowId) => {
+    playClick();
+    maximizeWindow(windowId);
+  };
+
+  const handleWindowClose = (windowId) => {
+    playClose();
+    closeWindow(windowId);
+  };
+
+  const handleWindowFocus = (windowId) => {
+    focusWindow(windowId);
+  };
+
+  // Handle taskbar click (minimize/restore)
+  const handleTaskbarClick = (window) => {
+    if (window.minimized) {
+      minimizeWindow(window.id, false);
+      focusWindow(window.id);
     } else {
-      dispatch({ type: 'MINIMIZE_WINDOW', payload: { id: win.id, minimized: true } });
+      minimizeWindow(window.id, true);
     }
   };
 
-  // Notification close handler
-  const handleNotificationClose = () => setNotification(null);
+  // Render app content based on type
+  const renderAppContent = (window) => {
+    const components = {
+      computer: <MyComputer />,
+      trash: <Trash />,
+      terminal: <Terminal />,
+      security: <Security />,
+      terms: <Terms />,
+      contact: <Contact showNotification={addNotification} />,
+      browser: <Browser />,
+      calculator: <Calculator />,
+      notepad: <Notepad />,
+      gallery: <div className="text-white/80 text-center text-lg">Gallery - Coming Soon</div>,
+      music: <div className="text-white/80 text-center text-lg">Music Player - Coming Soon</div>,
+      settings: <div className="text-white/80 text-center text-lg">Settings - Coming Soon</div>
+    };
+
+    return components[window.type] || (
+      <div className="text-white/80 text-center text-lg font-mono">
+        {window.title} App Window
+      </div>
+    );
+  };
+
+  // Get current wallpaper class
+  const currentWallpaper = wallpapers[wallpaper] || wallpapers.gradient;
 
   return (
-    <div className="min-h-screen w-full bg-[#181a20]">
+    <div className={clsx(
+      "min-h-screen w-full relative overflow-hidden transition-all duration-500",
+      currentWallpaper
+    )}>
       {/* Taskbar at the top */}
       <Taskbar onStartMenuShortcut={handleStartMenuShortcut} />
-      {/* Desktop area: absolutely positioned icons, snap to grid */}
-      <div className="pt-16 px-8 pb-4 min-h-[calc(100vh-3rem)] relative" style={{ minHeight: 'calc(100vh - 3rem)' }}>
-        {desktopIcons.map((icon, i) => {
-          const pos = iconPositions[icon.id] || getGridPosition(i);
-          return (
-            <DesktopIcon
-              key={icon.type}
-              type={icon.type}
-              label={icon.label}
-              tabIndex={0}
-              onDoubleClick={() => handleIconDoubleClick(icon)}
-              drag
-              dragMomentum={false}
-              style={{
-                position: 'absolute',
-                left: pos.x,
-                top: pos.y,
-                zIndex: 2,
-              }}
-              onDragEnd={(event, info) => handleIconDragEnd(icon.id, event, info)}
-            />
-          );
-        })}
-      </div>
+      
+      {/* Desktop area */}
+      <motion.div 
+        className="pt-16 px-8 pb-4 min-h-[calc(100vh-3rem)] relative"
+        style={{ minHeight: 'calc(100vh - 3rem)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* Desktop Icons */}
+        <AnimatePresence>
+          {desktopIcons.map((icon, index) => {
+            const position = iconPositions[icon.id] || getGridPosition(index);
+            
+            return (
+              <DesktopIcon
+                key={icon.id}
+                type={icon.type}
+                label={icon.label}
+                tabIndex={0}
+                onDoubleClick={() => handleIconDoubleClick(icon)}
+                drag
+                dragMomentum={false}
+                style={{
+                  position: 'absolute',
+                  left: position.x,
+                  top: position.y,
+                  zIndex: 2,
+                }}
+                onDragEnd={(event, info) => handleIconDragEnd(icon.id, event, info)}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ 
+                  duration: 0.3, 
+                  delay: index * 0.05,
+                  type: "spring",
+                  stiffness: 300
+                }}
+              />
+            );
+          })}
+        </AnimatePresence>
+      </motion.div>
+
       {/* Windows */}
-      {windows.map((win) => (
-        <Window
-          key={win.id}
-          title={win.title}
-          minimized={win.minimized}
-          maximized={win.maximized}
-          z={win.z}
-          onMinimize={() => dispatch({ type: 'MINIMIZE_WINDOW', payload: { id: win.id, minimized: true } })}
-          onMaximize={() => {
-            dispatch({ type: 'MAXIMIZE_WINDOW', payload: { id: win.id } });
-            showNotification(`${win.title} maximized`, 'info');
-          }}
-          onClose={() => dispatch({ type: 'CLOSE_WINDOW', payload: { id: win.id } })}
-          onFocus={() => { setActiveId(win.id); dispatch({ type: 'FOCUS_WINDOW', payload: { id: win.id } }); }}
-        >
-          {/* App content by window type */}
-          {win.id === 'computer' ? (
-            <MyComputer />
-          ) : win.id === 'trash' ? (
-            <Trash />
-          ) : win.id === 'terminal' ? (
-            <Terminal />
-          ) : win.id === 'security' ? (
-            <Security />
-          ) : win.id === 'terms' ? (
-            <Terms />
-          ) : win.id === 'contact' ? (
-            <Contact showNotification={showNotification} />
-          ) : (
-            <div className="text-white/80 text-center text-lg font-mono">
-              {win.title} App Window
-            </div>
-          )}
-        </Window>
-      ))}
+      <AnimatePresence>
+        {windows.map((window) => (
+          <Window
+            key={window.id}
+            title={window.title}
+            minimized={window.minimized}
+            maximized={window.maximized}
+            z={window.zIndex}
+            position={window.position}
+            size={window.size}
+            onMinimize={() => handleWindowMinimize(window.id)}
+            onMaximize={() => handleWindowMaximize(window.id)}
+            onClose={() => handleWindowClose(window.id)}
+            onFocus={() => handleWindowFocus(window.id)}
+            isActive={window.id === activeWindowId}
+            initial={{ opacity: 0, scale: 0.9, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 50 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 30 
+            }}
+          >
+            {renderAppContent(window)}
+          </Window>
+        ))}
+      </AnimatePresence>
+
       {/* Bottom Taskbar */}
-      <BottomTaskbar windows={windows} onClick={handleTaskbarClick} activeId={activeId} />
-      {/* Notification Toast */}
-      {notification && (
-        <Notification
-          message={notification.message}
-          type={notification.type}
-          onClose={handleNotificationClose}
-        />
-      )}
+      <BottomTaskbar 
+        windows={windows} 
+        onClick={handleTaskbarClick} 
+        activeId={activeWindowId} 
+      />
+
+      {/* Notifications */}
+      <div className="fixed top-20 right-4 space-y-2 z-50">
+        <AnimatePresence>
+          {notifications.map((notification) => (
+            <Notification
+              key={notification.id}
+              message={notification.message}
+              type={notification.type}
+              onClose={() => removeNotification(notification.id)}
+              initial={{ opacity: 0, x: 300, scale: 0.8 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 300, scale: 0.8 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 300, 
+                damping: 30 
+              }}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Boot sequence overlay (optional) */}
+      {/* This could be added later for the boot animation */}
     </div>
   );
 }
